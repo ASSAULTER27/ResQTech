@@ -20,9 +20,7 @@ from pydantic import BaseModel, Field
 from ultralytics import YOLO
 import uvicorn
 
-ROOT = Path(__file__).resolve().parent
-STATIC = ROOT / "static"
-app = FastAPI(title="ResQTech One-Click Dashboard")
+app = FastAPI(title="ResQTech One-Click API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +30,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 alerts: list[dict[str, Any]] = []
 state: dict[str, Any] = {
@@ -158,10 +155,6 @@ def run_detection(cfg: StartRequest):
     finally:
         with lock:
             state['running']=False
-
-@app.get('/', response_class=HTMLResponse)
-def home():
-    return (STATIC/'index.html').read_text(encoding='utf-8')
 
 @app.get('/api/alerts')
 def get_alerts():
