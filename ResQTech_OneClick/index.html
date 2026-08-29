@@ -1,0 +1,8 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ResQTech One-Click</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><link rel="stylesheet" href="/static/style.css"></head>
+<body><header><div><h1>RESQTECH</h1><p>Drone-Based Search & Rescue Intelligence</p></div><b id="status">● READY</b></header>
+<main><section class="controls"><h2>Start AI Detection</h2><label>Video file path <input id="video" placeholder="C:\\Users\\DAX\\ResQTech\\datasets\\videos\\test.mp4"></label><label>College latitude <input id="lat" type="number" step="0.000001" value="20.5937"></label><label>College longitude <input id="lon" type="number" step="0.000001" value="78.9629"></label><label>Altitude (m) <input id="alt" type="number" value="30"></label><button onclick="startDetection()">Start detection</button><button class="stop" onclick="stopDetection()">Stop</button><small>Use your Google Maps college coordinates. This prototype estimates locations around that base point.</small><div id="message"></div></section>
+<section class="stats"><div><span>Total alerts</span><strong id="total">0</strong></div><div class="red"><span>High priority</span><strong id="high">0</strong></div><div><span>People detected</span><strong id="people">0</strong></div></section>
+<section class="grid"><div class="panel"><h2>Live rescue map</h2><div id="map"></div></div><div class="panel"><h2>Live AI video</h2><img id="frame" alt="Start detection to view processed video"><h2>Alerts</h2><div id="list">No alerts yet.</div></div></section></main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="/static/app.js"></script></body></html>
