@@ -10,8 +10,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import tempfile
 import cv2
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -21,6 +23,15 @@ import uvicorn
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "static"
 app = FastAPI(title="ResQTech One-Click Dashboard")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this to specific domains for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 alerts: list[dict[str, Any]] = []
@@ -168,15 +179,35 @@ def get_frame():
         return {'image_b64':state['last_frame']}
 
 @app.post('/api/start')
-def start(req: StartRequest):
+async def start(
+    video: UploadFile = File(...),
+    base_latitude: float = Form(...),
+    base_longitude: float = Form(...),
+    altitude_m: float = Form(30.0),
+    confidence: float = Form(0.45)
+):
     global worker
     with lock:
         if state['running']:
             return {'ok':False,'message':'Detection is already running. Stop it first.'}
-        if not Path(req.video_path).exists():
-            return {'ok':False,'message':f'Video not found: {req.video_path}'}
+        
+        # Save uploaded file to a temporary location
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
+        temp_file.write(await video.read())
+        temp_file.close()
+        video_path_str = temp_file.name
+
         alerts.clear(); stop_event.clear()
-        state.update({'running':True,'source':req.video_path,'error':'','base_lat':req.base_latitude,'base_lon':req.base_longitude,'altitude_m':req.altitude_m,'confidence':req.confidence,'last_frame':None,'processed_frames':0,'last_alert_at':0.0})
+        state.update({'running':True,'source':video.filename,'error':'','base_lat':base_latitude,'base_lon':base_longitude,'altitude_m':altitude_m,'confidence':confidence,'last_frame':None,'processed_frames':0,'last_alert_at':0.0})
+        
+        req = StartRequest(
+            video_path=video_path_str,
+            base_latitude=base_latitude,
+            base_longitude=base_longitude,
+            altitude_m=altitude_m,
+            confidence=confidence
+        )
+        
         worker=threading.Thread(target=run_detection,args=(req,),daemon=True)
         worker.start()
     return {'ok':True,'message':'Detection started'}

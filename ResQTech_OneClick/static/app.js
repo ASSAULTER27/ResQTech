@@ -1,3 +1,7 @@
+// CHANGE THIS URL to your deployed Render URL (e.g. "https://resqtech-backend.onrender.com")
+// For local development with Vercel frontend, you might need "http://127.0.0.1:8000"
+const API_BASE_URL = ""; 
+
 const map = L.map("map").setView([20.5937, 78.9629], 5);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -37,30 +41,39 @@ function rescueIcon(score) {
 }
 
 async function startDetection() {
-  const body = {
-    video_path: document.getElementById("video").value.trim(),
-    base_latitude: Number(document.getElementById("lat").value),
-    base_longitude: Number(document.getElementById("lon").value),
-    altitude_m: Number(document.getElementById("alt").value),
-    confidence: 0.45,
-  };
+  const fileInput = document.getElementById("video");
+  if (!fileInput.files || fileInput.files.length === 0) {
+    document.getElementById("message").textContent = "Please upload a video file first.";
+    return;
+  }
 
-  const response = await fetch("/api/start", {
+  const formData = new FormData();
+  formData.append("video", fileInput.files[0]);
+  formData.append("base_latitude", document.getElementById("lat").value);
+  formData.append("base_longitude", document.getElementById("lon").value);
+  formData.append("altitude_m", document.getElementById("alt").value);
+  formData.append("confidence", 0.45);
+
+  document.getElementById("message").textContent = "Uploading video and starting detection...";
+
+  const response = await fetch(`${API_BASE_URL}/api/start`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: formData,
   });
 
   const result = await response.json();
   document.getElementById("message").textContent = result.message;
 
   if (result.ok) {
-    map.setView([body.base_latitude, body.base_longitude], 17);
+    map.setView([
+      Number(document.getElementById("lat").value),
+      Number(document.getElementById("lon").value)
+    ], 17);
   }
 }
 
 async function stopDetection() {
-  const response = await fetch("/api/stop", {
+  const response = await fetch(`${API_BASE_URL}/api/stop`, {
     method: "POST",
   });
 
@@ -134,9 +147,9 @@ function renderAlerts(alerts) {
 async function refresh() {
   try {
     const [alerts, status, frame] = await Promise.all([
-      fetch("/api/alerts").then((response) => response.json()),
-      fetch("/api/status").then((response) => response.json()),
-      fetch("/api/frame").then((response) => response.json()),
+      fetch(`${API_BASE_URL}/api/alerts`).then((response) => response.json()),
+      fetch(`${API_BASE_URL}/api/status`).then((response) => response.json()),
+      fetch(`${API_BASE_URL}/api/frame`).then((response) => response.json()),
     ]);
 
     const statusElement = document.getElementById("status");
