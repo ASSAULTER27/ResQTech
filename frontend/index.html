@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>ResQTech One-Click</title>
+  <title>ResQTech Tactical Dashboard</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -23,23 +26,46 @@
       <h2>Start AI Detection</h2>
 
       <label>
+        Source Type
+        <select id="sourceType" onchange="toggleSourceType()">
+          <option value="file">Video File Upload</option>
+          <option value="rtsp">RTSP Live Stream</option>
+        </select>
+      </label>
+
+      <label id="fileInputContainer">
         Upload Video File
         <input id="video" type="file" accept="video/mp4,video/x-m4v,video/*">
       </label>
 
+      <label id="rtspInputContainer" style="display: none;">
+        RTSP Stream URL
+        <input id="rtsp" type="text" placeholder="rtsp://192.168.1.100:554/stream" value="rtsp://127.0.0.1:8554/live">
+      </label>
+
       <label>
         College latitude
-        <input id="lat" type="number" step="0.000001" value="20.5937">
+        <input id="lat" type="number" step="0.000001" value="22.2587">
       </label>
 
       <label>
         College longitude
-        <input id="lon" type="number" step="0.000001" value="78.9629">
+        <input id="lon" type="number" step="0.000001" value="71.1924">
       </label>
 
       <label>
         Altitude (m)
         <input id="alt" type="number" value="30">
+      </label>
+
+      <label>
+        Confidence
+        <input id="conf" type="number" step="0.05" min="0.10" max="0.95" value="0.25">
+      </label>
+
+      <label style="flex-direction: row; gap: 8px; align-items: center; cursor: pointer; user-select: none; margin-bottom: 10px;">
+        <input id="autocenter" type="checkbox" checked style="min-width: auto; width: 16px; height: 16px; margin: 0; padding: 0; cursor: pointer;">
+        Auto-Center
       </label>
 
       <button onclick="startDetection()">Start Detection</button>

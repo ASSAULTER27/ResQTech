@@ -1,15 +1,16 @@
-// CHANGE THIS URL to your deployed Render URL (e.g. "https://resqtech-backend.onrender.com")
-// For local development with Vercel frontend, you might need "http://127.0.0.1:8000"
-const API_BASE_URL = ""; 
+const API_BASE_URL = window.location.origin.startsWith("http")
+  ? window.location.origin
+  : "http://127.0.0.1:8000"; 
 
-const map = L.map("map").setView([20.5937, 78.9629], 5);
+const map = L.map("map").setView([22.2587, 71.1924], 7);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
-  attribution: "© OpenStreetMap",
+  attribution: "© OpenStreetMap contributors",
 }).addTo(map);
 
 let markers = [];
+let lastRenderedAlertsCount = -1;
 
 function priority(score) {
   if (score >= 0.8) return "HIGH";
@@ -18,43 +19,65 @@ function priority(score) {
 }
 
 function rescueIcon(score) {
-  let color = "#1778bd";
+  let color = "#10b981";
 
-  if (score >= 0.8) color = "#dc2626";
+  if (score >= 0.8) color = "#ef4444";
   else if (score >= 0.55) color = "#f59e0b";
 
   return L.divIcon({
     className: "",
     html: `
       <div style="
-        width:22px;
-        height:22px;
-        background:${color};
-        border:3px solid white;
-        border-radius:50%;
-        box-shadow:0 1px 5px #333;
+        width: 18px;
+        height: 18px;
+        background: ${color};
+        border: 2px solid #070a13;
+        border-radius: 50%;
+        box-shadow: 0 0 12px ${color}, 0 0 4px ${color};
       "></div>
     `,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
   });
 }
 
+function toggleSourceType() {
+  const type = document.getElementById("sourceType").value;
+  if (type === "file") {
+    document.getElementById("fileInputContainer").style.display = "flex";
+    document.getElementById("rtspInputContainer").style.display = "none";
+  } else {
+    document.getElementById("fileInputContainer").style.display = "none";
+    document.getElementById("rtspInputContainer").style.display = "flex";
+  }
+}
+
 async function startDetection() {
-  const fileInput = document.getElementById("video");
-  if (!fileInput.files || fileInput.files.length === 0) {
-    document.getElementById("message").textContent = "Please upload a video file first.";
-    return;
+  const type = document.getElementById("sourceType").value;
+  const formData = new FormData();
+
+  if (type === "file") {
+    const fileInput = document.getElementById("video");
+    if (!fileInput.files || fileInput.files.length === 0) {
+      document.getElementById("message").textContent = "Please upload a video file first.";
+      return;
+    }
+    formData.append("video", fileInput.files[0]);
+    document.getElementById("message").textContent = "Uploading video and starting detection...";
+  } else {
+    const rtspInput = document.getElementById("rtsp");
+    if (!rtspInput.value.trim()) {
+      document.getElementById("message").textContent = "Please enter an RTSP Stream URL.";
+      return;
+    }
+    formData.append("rtsp_url", rtspInput.value.trim());
+    document.getElementById("message").textContent = "Connecting to RTSP live stream and starting detection...";
   }
 
-  const formData = new FormData();
-  formData.append("video", fileInput.files[0]);
   formData.append("base_latitude", document.getElementById("lat").value);
   formData.append("base_longitude", document.getElementById("lon").value);
   formData.append("altitude_m", document.getElementById("alt").value);
-  formData.append("confidence", 0.45);
-
-  document.getElementById("message").textContent = "Uploading video and starting detection...";
+  formData.append("confidence", document.getElementById("conf").value);
 
   const response = await fetch(`${API_BASE_URL}/api/start`, {
     method: "POST",
@@ -82,6 +105,8 @@ async function stopDetection() {
 }
 
 function renderAlerts(alerts) {
+  const countChanged = alerts.length !== lastRenderedAlertsCount;
+  
   document.getElementById("total").textContent = alerts.length;
 
   document.getElementById("high").textContent = alerts.filter(
@@ -105,6 +130,7 @@ function renderAlerts(alerts) {
 
   if (alerts.length === 0) {
     list.textContent = "No alerts yet.";
+    lastRenderedAlertsCount = 0;
     return;
   }
 
@@ -116,10 +142,17 @@ function renderAlerts(alerts) {
       { icon: rescueIcon(alert.triage_score) }
     ).addTo(map);
 
+    const errorRadius = alert.triage_factors.estimated_location_error_m || 0;
+    const recBadge = alert.triage_factors.face_recognized 
+      ? '<span style="color:#7ee787;font-weight:bold;">[Face Recognized]</span>' 
+      : (alert.triage_factors.reid_matched ? '<span style="color:#38bdf8;font-weight:bold;">[Re-ID Verified]</span>' : '<span style="color:#fbbf24;">[Victim Identified]</span>');
+
     marker.bindPopup(`
-      <b>Alert #${alert.id}</b><br>
-      Priority: ${alertPriority}<br>
-      Location: ${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)}
+      <b>Victim #${alert.id} (${alertPriority})</b> ${recBadge}<br>
+      Location: ${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)} (±${errorRadius}m)<br>
+      Posture: ${alert.triage_factors.posture || 'Unknown'}<br>
+      Belongings: ${alert.triage_factors.belongings_detected && alert.triage_factors.belongings_detected.length > 0 ? alert.triage_factors.belongings_detected.join(', ') : 'None'}<br>
+      Cluster: ${alert.triage_factors.cluster_size > 0 ? (alert.triage_factors.cluster_size + ' nearby') : 'Solo'}
     `);
 
     markers.push(marker);
@@ -127,50 +160,66 @@ function renderAlerts(alerts) {
     const item = document.createElement("div");
     item.className = `card ${alertPriority.toLowerCase()}`;
 
+    const belongingsStr = alert.triage_factors.belongings_detected && alert.triage_factors.belongings_detected.length > 0 
+      ? alert.triage_factors.belongings_detected.join(', ') 
+      : 'None';
+    const clusterStr = alert.triage_factors.cluster_size > 0 
+      ? `${alert.triage_factors.cluster_size} nearby` 
+      : 'Solo';
+
     item.innerHTML = `
-      <b>Alert #${alert.id} — ${alertPriority}</b><br>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <b>Victim #${alert.id} — ${alertPriority}</b>
+        <small>${recBadge}</small>
+      </div>
       <small>${new Date(alert.created_at).toLocaleString()}</small><br>
-      Location: ${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)}<br>
-      People: ${alert.detections.length}<br>
-      Confidence: ${alert.detections[0].confidence}<br>
+      Location: ${alert.latitude.toFixed(6)}, ${alert.longitude.toFixed(6)} (±${errorRadius}m)<br>
+      Posture: ${alert.triage_factors.posture || 'Unknown'}<br>
+      Belongings: ${belongingsStr}<br>
+      Cluster: ${clusterStr}<br>
       Triage Score: ${alert.triage_score}
     `;
 
     list.appendChild(item);
   });
 
-  if (markers.length > 0) {
+  const autoCenterChecked = document.getElementById("autocenter") ? document.getElementById("autocenter").checked : true;
+  if (markers.length > 0 && countChanged && autoCenterChecked) {
     map.fitBounds(L.featureGroup(markers).getBounds().pad(0.2));
   }
+  
+  lastRenderedAlertsCount = alerts.length;
 }
 
 async function refresh() {
   try {
-    const [alerts, status, frame] = await Promise.all([
+    const [alerts, status] = await Promise.all([
       fetch(`${API_BASE_URL}/api/alerts`).then((response) => response.json()),
       fetch(`${API_BASE_URL}/api/status`).then((response) => response.json()),
-      fetch(`${API_BASE_URL}/api/frame`).then((response) => response.json()),
     ]);
 
     const statusElement = document.getElementById("status");
+    const frameImg = document.getElementById("frame");
 
     if (status.running) {
       statusElement.textContent = "● DETECTION RUNNING";
       statusElement.style.color = "#7ee787";
+      const streamUrl = `${API_BASE_URL}/api/stream`;
+      if (frameImg.src !== streamUrl && !frameImg.src.startsWith(streamUrl + "?")) {
+        frameImg.src = streamUrl + "?t=" + new Date().getTime();
+      }
     } else {
       statusElement.textContent = "● READY";
       statusElement.style.color = "#b8e9c8";
+      if (frameImg.src.includes("/api/stream")) {
+        frameImg.src = "";
+      }
     }
 
     if (status.error) {
       statusElement.textContent = "● ERROR";
       statusElement.style.color = "#ff9595";
       document.getElementById("message").textContent = status.error;
-    }
-
-    if (frame.image_b64) {
-      document.getElementById("frame").src =
-        "data:image/jpeg;base64," + frame.image_b64;
     }
 
     renderAlerts(alerts);
