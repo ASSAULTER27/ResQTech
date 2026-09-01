@@ -205,13 +205,25 @@ async function refresh() {
       statusElement.textContent = "● DETECTION RUNNING";
       statusElement.style.color = "#7ee787";
       const streamUrl = `${API_BASE_URL}/api/stream`;
-      if (frameImg.src !== streamUrl && !frameImg.src.startsWith(streamUrl + "?")) {
-        frameImg.src = streamUrl + "?t=" + new Date().getTime();
+
+      // Check if image fails to load via MJPEG stream (common on Cloud proxies like Render)
+      if (!frameImg.src || (!frameImg.src.includes("/api/stream") && !frameImg.src.startsWith("data:image"))) {
+        frameImg.src = streamUrl;
       }
+
+      // Base64 frame fallback polling for Render/Cloud proxy compatibility
+      fetch(`${API_BASE_URL}/api/frame`)
+        .then(res => res.json())
+        .then(frameData => {
+          if (frameData && frameData.image_b64) {
+            frameImg.src = "data:image/jpeg;base64," + frameData.image_b64;
+          }
+        })
+        .catch(() => {});
     } else {
       statusElement.textContent = "● READY";
       statusElement.style.color = "#b8e9c8";
-      if (frameImg.src.includes("/api/stream")) {
+      if (frameImg.src.includes("/api/stream") || frameImg.src.startsWith("data:image")) {
         frameImg.src = "";
       }
     }
@@ -229,5 +241,5 @@ async function refresh() {
   }
 }
 
-setInterval(refresh, 1200);
+setInterval(refresh, 800);
 refresh();

@@ -242,22 +242,43 @@ def jpeg_b64(frame, max_height=180):
     return base64.b64encode(buf.tobytes()).decode() if ok else None
 
 
+MODEL_PATH = Path(__file__).parent / "yolo11n.pt"
+if not MODEL_PATH.exists():
+    MODEL_PATH = Path("yolo11n.pt")
+
+global_model = None
+
+def get_yolo_model():
+    global global_model
+    if global_model is None:
+        global_model = YOLO(str(MODEL_PATH))
+    return global_model
+
+
 def run_detection(cfg: StartRequest):
     global worker
     cap = None
     try:
-        model = YOLO('yolo11n.pt')
+        model = get_yolo_model()
         cap = RTSPStreamReader(cfg.video_path)
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video source: {cfg.video_path}")
 
         known_victims = []  # Unique physical victims registered in session
+        frame_counter = 0
 
         while not stop_event.is_set():
             ok, frame = cap.read()
             if not ok or frame is None:
                 time.sleep(0.01)
                 continue
+            
+            frame_counter += 1
+            # Frame skipping optimization for cloud servers (process 1 out of 2 frames to save CPU)
+            if frame_counter % 2 != 0 and state.get('last_frame_bytes') is not None:
+                time.sleep(0.01)
+                continue
+
             h, w = frame.shape[:2]
 
             # Parse frame detections with tracking if available
