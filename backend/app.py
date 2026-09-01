@@ -483,7 +483,7 @@ def frame_generator():
         if frame_bytes and frame_no != last_sent_frame_id:
             last_sent_frame_id = frame_no
             yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
         else:
             time.sleep(0.01)
 
