@@ -77,19 +77,23 @@ async function startDetection() {
   formData.append("altitude_m", document.getElementById("alt").value);
   formData.append("confidence", document.getElementById("conf").value);
 
-  const response = await fetch(`${API_BASE_URL}/api/start`, {
-    method: "POST",
-    body: formData,
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/start`, {
+      method: "POST",
+      body: formData,
+    });
 
-  const result = await response.json();
-  document.getElementById("message").textContent = result.message;
+    const result = await response.json();
+    document.getElementById("message").textContent = result.message;
 
-  if (result.ok) {
-    map.setView([
-      Number(document.getElementById("lat").value),
-      Number(document.getElementById("lon").value)
-    ], 17);
+    if (result.ok) {
+      map.setView([
+        Number(document.getElementById("lat").value),
+        Number(document.getElementById("lon").value)
+      ], 17);
+    }
+  } catch (error) {
+    document.getElementById("message").textContent = "Unable to start detection. Please try again.";
   }
 }
 

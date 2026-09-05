@@ -529,8 +529,11 @@ async def start(
         source_name = ""
         if video and video.filename:
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-            temp_file.write(await video.read())
-            temp_file.close()
+            try:
+                while chunk := await video.read(1024 * 1024):
+                    temp_file.write(chunk)
+            finally:
+                temp_file.close()
             video_path_str = temp_file.name
             source_name = video.filename
         elif rtsp_url:
