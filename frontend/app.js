@@ -1,6 +1,4 @@
-const API_BASE_URL = window.location.origin.startsWith("http")
-  ? window.location.origin
-  : "http://127.0.0.1:8000"; 
+const API_BASE_URL = "https://resqtech-k5xd.onrender.com";
 
 const map = L.map("map").setView([22.2587, 71.1924], 7);
 
