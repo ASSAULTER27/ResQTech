@@ -1,6 +1,6 @@
-const API_BASE_URL = (window.RESQTECH_CONFIG && window.RESQTECH_CONFIG.BACKEND_URL)
-  ? window.RESQTECH_CONFIG.BACKEND_URL
-  : "https://resqtech-k5xd.onrender.com";
+const API_BASE_URL = window.location.origin.startsWith("http")
+  ? window.location.origin
+  : "http://127.0.0.1:8000"; 
 
 const map = L.map("map").setView([22.2587, 71.1924], 7);
 
@@ -241,29 +241,5 @@ async function refresh() {
   }
 }
 
-let pollingIntervalId = null;
-
-function startDashboardPolling() {
-  if (pollingIntervalId) return;
-  
-  // Re-invalidate map dimensions after container becomes visible
-  setTimeout(() => {
-    if (map && typeof map.invalidateSize === 'function') {
-      map.invalidateSize();
-    }
-  }, 200);
-
-  refresh();
-  pollingIntervalId = setInterval(refresh, 800);
-}
-
-function stopDashboardPolling() {
-  if (pollingIntervalId) {
-    clearInterval(pollingIntervalId);
-    pollingIntervalId = null;
-  }
-}
-
-// Expose polling controls globally for auth module
-window.startDashboardPolling = startDashboardPolling;
-window.stopDashboardPolling = stopDashboardPolling;
+setInterval(refresh, 800);
+refresh();
