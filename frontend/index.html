@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -13,106 +13,192 @@
 </head>
 
 <body>
-  <header>
-    <div>
-      <h1>RESQTECH</h1>
-      <p>Drone-Based Search & Rescue Intelligence</p>
+
+  <!-- ======================================================= -->
+  <!-- AUTHENTICATION SCREEN (Shown when logged out)           -->
+  <!-- ======================================================= -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h1>RESQTECH</h1>
+        <p>Tactical Search & Rescue Command Center</p>
+      </div>
+
+      <!-- Mode Toggle Tabs -->
+      <div class="auth-tabs">
+        <button id="tab-login" class="tab-btn active">LOGIN</button>
+        <button id="tab-signup" class="tab-btn">SIGN UP</button>
+      </div>
+
+      <div class="auth-body">
+        <h2 id="auth-mode-title">COMMAND CENTER LOGIN</h2>
+        <p id="auth-subtitle" class="auth-subtext">Enter your email to receive a secure access code</p>
+
+        <!-- Alert Notification Box -->
+        <div id="auth-alert" class="auth-alert" style="display: none;"></div>
+
+        <!-- STEP 1: Email Input Form -->
+        <div id="email-step">
+          <div class="input-group">
+            <label for="auth-email">Operator Email Address</label>
+            <input id="auth-email" type="email" placeholder="operator@resqtech.gov" autocomplete="email">
+          </div>
+          <button id="send-otp-btn" class="auth-primary-btn">SEND ACCESS CODE</button>
+        </div>
+
+        <!-- STEP 2: 6-Digit OTP Verification Form -->
+        <div id="otp-step" style="display: none;">
+          <p class="otp-instructions">
+            Enter the 6-digit security code sent to <strong id="masked-email">operator@...</strong>
+          </p>
+
+          <div class="otp-container">
+            <input type="text" class="otp-digit-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" aria-label="Digit 1">
+            <input type="text" class="otp-digit-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Digit 2">
+            <input type="text" class="otp-digit-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Digit 3">
+            <input type="text" class="otp-digit-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Digit 4">
+            <input type="text" class="otp-digit-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Digit 5">
+            <input type="text" class="otp-digit-input" maxlength="1" inputmode="numeric" pattern="[0-9]*" aria-label="Digit 6">
+          </div>
+
+          <button id="verify-otp-btn" class="auth-primary-btn">VERIFY & ENTER COMMAND CENTER</button>
+
+          <div class="otp-actions">
+            <button id="resend-otp-btn" class="auth-secondary-btn" disabled>
+              Resend Code<span id="resend-timer"></span>
+            </button>
+            <button id="back-to-email-btn" class="text-link">← Change Email</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        <span>RESQTECH SECURE PORTAL</span>
+        <span>AUTH ENCRYPTION ACTIVE</span>
+      </div>
     </div>
-    <b id="status">● READY</b>
-  </header>
+  </div>
 
-  <main>
-    <section class="controls">
-      <h2>Start AI Detection</h2>
 
-      <label>
-        Source Type
-        <select id="sourceType" onchange="toggleSourceType()">
-          <option value="file">Video File Upload</option>
-          <option value="rtsp">RTSP Live Stream</option>
-        </select>
-      </label>
-
-      <label id="fileInputContainer">
-        Upload Video File
-        <input id="video" type="file" accept="video/mp4,video/x-m4v,video/*">
-      </label>
-
-      <label id="rtspInputContainer" style="display: none;">
-        RTSP Stream URL
-        <input id="rtsp" type="text" placeholder="rtsp://192.168.1.100:554/stream" value="rtsp://127.0.0.1:8554/live">
-      </label>
-
-      <label>
-        College latitude
-        <input id="lat" type="number" step="0.000001" value="22.2587">
-      </label>
-
-      <label>
-        College longitude
-        <input id="lon" type="number" step="0.000001" value="71.1924">
-      </label>
-
-      <label>
-        Altitude (m)
-        <input id="alt" type="number" value="30">
-      </label>
-
-      <label>
-        Confidence
-        <input id="conf" type="number" step="0.05" min="0.10" max="0.95" value="0.25">
-      </label>
-
-      <label style="flex-direction: row; gap: 8px; align-items: center; cursor: pointer; user-select: none; margin-bottom: 10px;">
-        <input id="autocenter" type="checkbox" checked style="min-width: auto; width: 16px; height: 16px; margin: 0; padding: 0; cursor: pointer;">
-        Auto-Center
-      </label>
-
-      <button onclick="startDetection()">Start Detection</button>
-      <button class="stop" onclick="stopDetection()">Stop</button>
-
-      <small>
-        Enter your college Google Maps latitude and longitude.
-        This prototype estimates victim locations around that base point.
-      </small>
-
-      <div id="message"></div>
-    </section>
-
-    <section class="stats">
+  <!-- ======================================================= -->
+  <!-- DASHBOARD SCREEN (Protected - Shown when authenticated) -->
+  <!-- ======================================================= -->
+  <div id="dashboard-screen" style="display: none;">
+    <header>
       <div>
-        <span>Total Alerts</span>
-        <strong id="total">0</strong>
+        <h1>RESQTECH</h1>
+        <p>Drone-Based Search & Rescue Intelligence</p>
       </div>
-
-      <div class="red">
-        <span>High Priority</span>
-        <strong id="high">0</strong>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <b id="status">● READY</b>
+        <button id="logoutBtn" class="logout-btn" style="display: none;">LOGOUT</button>
       </div>
+    </header>
 
-      <div>
-        <span>People Detected</span>
-        <strong id="people">0</strong>
-      </div>
-    </section>
+    <main>
+      <section class="controls">
+        <h2>Start AI Detection</h2>
 
-    <section class="grid">
-      <div class="panel">
-        <h2>Live Rescue Map</h2>
-        <div id="map"></div>
-      </div>
+        <label>
+          Source Type
+          <select id="sourceType" onchange="toggleSourceType()">
+            <option value="file">Video File Upload</option>
+            <option value="rtsp">RTSP Live Stream</option>
+          </select>
+        </label>
 
-      <div class="panel">
-        <h2>Live AI Video</h2>
-        <img id="frame" alt="Start detection to view processed video">
+        <label id="fileInputContainer">
+          Upload Video File
+          <input id="video" type="file" accept="video/mp4,video/x-m4v,video/*">
+        </label>
 
-        <h2>Alerts</h2>
-        <div id="list">No alerts yet.</div>
-      </div>
-    </section>
-  </main>
+        <label id="rtspInputContainer" style="display: none;">
+          RTSP Stream URL
+          <input id="rtsp" type="text" placeholder="rtsp://192.168.1.100:554/stream" value="rtsp://127.0.0.1:8554/live">
+        </label>
 
+        <label>
+          College latitude
+          <input id="lat" type="number" step="0.000001" value="22.2587">
+        </label>
+
+        <label>
+          College longitude
+          <input id="lon" type="number" step="0.000001" value="71.1924">
+        </label>
+
+        <label>
+          Altitude (m)
+          <input id="alt" type="number" value="30">
+        </label>
+
+        <label>
+          Confidence
+          <input id="conf" type="number" step="0.05" min="0.10" max="0.95" value="0.25">
+        </label>
+
+        <label style="flex-direction: row; gap: 8px; align-items: center; cursor: pointer; user-select: none; margin-bottom: 10px;">
+          <input id="autocenter" type="checkbox" checked style="min-width: auto; width: 16px; height: 16px; margin: 0; padding: 0; cursor: pointer;">
+          Auto-Center
+        </label>
+
+        <button onclick="startDetection()">Start Detection</button>
+        <button class="stop" onclick="stopDetection()">Stop</button>
+
+        <small>
+          Enter your college Google Maps latitude and longitude.
+          This prototype estimates victim locations around that base point.
+        </small>
+
+        <div id="message"></div>
+      </section>
+
+      <section class="stats">
+        <div>
+          <span>Total Alerts</span>
+          <strong id="total">0</strong>
+        </div>
+
+        <div class="red">
+          <span>High Priority</span>
+          <strong id="high">0</strong>
+        </div>
+
+        <div>
+          <span>People Detected</span>
+          <strong id="people">0</strong>
+        </div>
+      </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h2>Live Rescue Map</h2>
+          <div id="map"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Live AI Video</h2>
+          <img id="frame" alt="Start detection to view processed video">
+
+          <h2>Alerts</h2>
+          <div id="list">No alerts yet.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- External Libraries -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Application Modules -->
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

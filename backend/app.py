@@ -25,7 +25,12 @@ app = FastAPI(title="ResQTech One-Click API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this to specific domains for production
+    allow_origins=[
+        "https://res-q-tech-lilac.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
